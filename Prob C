@@ -1,0 +1,56 @@
+import heapq
+
+# To find shortest path (using voucher) from start to all vertices
+def modified_dijkstra(graph, start):
+    # This part use normal dijkstra to find minimum costs without voucher
+    # and minimum costs if using voucher for the last flight
+    priority_queue = [(0, start)]
+    shortest_distances = {node: float('infinity') for node in graph}
+    with_vou = {node: float('infinity') for node in graph}
+    shortest_distances[start] = 0
+    with_vou[start] = 0
+    while priority_queue:
+        current_distance, current_node = heapq.heappop(priority_queue)
+        if current_distance > shortest_distances[current_node]:
+            continue
+        for neighbor, weight in graph[current_node].items():
+            distance = current_distance + weight
+            distance_with_vou = current_distance + weight // 2
+            if distance < shortest_distances[neighbor]:
+                shortest_distances[neighbor] = distance
+                heapq.heappush(priority_queue, (distance, neighbor))
+            if distance_with_vou < with_vou[neighbor]:
+                with_vou[neighbor] = distance_with_vou
+
+    # This part find minimum costs with voucher if using voucher for any flight
+    # with_vou[v] = min(without_vou[u] + cost(u, v) // 2, with_vou[u] + cost(u, v))
+    # The first part in min has already been calculated             
+    for key, value in with_vou.items():
+        heapq.heappush(priority_queue, (value, key))
+    while priority_queue:
+        current_distance, current_node = heapq.heappop(priority_queue)
+        if current_distance > with_vou[current_node]:
+            continue
+        for neighbor, weight in graph[current_node].items():
+            distance = current_distance + weight
+            if distance < with_vou[neighbor]:
+                with_vou[neighbor] = distance
+                heapq.heappush(priority_queue, (distance, neighbor))
+
+    return with_vou
+
+
+graph = {}
+n_vertices, n_edges = map(int, input().split())
+for i in range(n_edges):
+    input_list = input().split(" ")
+    x, y, w = map(int, input_list)
+    if x not in graph: graph[x] = {y : w}
+    else:
+        if y not in graph[x]:
+            graph[x][y] = w
+        else:
+            graph[x][y] = min(graph[x][y], w)
+    if y not in graph: graph[y] = {}
+result = modified_dijkstra(graph, 1)[n_vertices]
+print(result)
